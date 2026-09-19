@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My WebBridge Test</title>
+</head>
+<body>
+  <h1>My WebBridge Test Page</h1>
+  <input id="name" placeholder="name">
+  <button id="go">Click me</button>
+  <div id="result">idle</div>
+  <script>
+    document.getElementById('go').addEventListener('click', () => {
+      document.getElementById('result').textContent =
+        'clicked:' + document.getElementById('name').value;
+    });
+  </script>
+</body>
+</html>

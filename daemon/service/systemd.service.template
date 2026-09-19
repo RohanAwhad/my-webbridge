@@ -1,0 +1,15 @@
+[Unit]
+Description=My WebBridge daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{PYTHON}} {{DAEMON_PY}} --port {{PORT}}
+WorkingDirectory={{REPO_ROOT}}/daemon
+Restart=always
+RestartSec=3
+StandardOutput=append:{{REPO_ROOT}}/logs/daemon.out.log
+StandardError=append:{{REPO_ROOT}}/logs/daemon.err.log
+
+[Install]
+WantedBy=default.target
