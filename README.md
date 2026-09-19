@@ -22,7 +22,7 @@ my-webbridge/
 ├── extension/         Chrome MV3 extension (manifest.json + worker.js)
 ├── skill/             canonical agent skill (SKILL.md + reference/)
 ├── fixtures/          deterministic test page used by behavior_test.py
-├── scripts/           install / uninstall / daemon-ctl / behavior_test
+├── scripts/           install / uninstall / daemon-ctl / reveal-extension / behavior_test
 ├── prompts/           ready-to-paste bootstrap prompt for a fresh agent session
 └── INSTALL.md         step-by-step install runbook (agent-facing)
 ```
@@ -40,10 +40,13 @@ Manual install:
 ```bash
 ./scripts/install.sh                # --agents claude|opencode|both, --no-service, --port N
 ./scripts/daemon-ctl.sh start       # if installed with --no-service
+./scripts/reveal-extension.sh       # reveals the extension folder + opens chrome://extensions
 ./scripts/behavior_test.py          # after loading the extension in Chrome
 ```
 
-Then load `extension/` unpacked in Chrome (`chrome://extensions` → Developer mode → Load unpacked).
+`install.sh` copies `extension/` to a **visible** dir so it's easy to find in Chrome's file
+picker — macOS: `~/Desktop/My Web Bridge Extension`, Linux: `~/my-webbridge-extension`
+(override with `--extension-dir`). Chrome points there, not into the repo.
 
 ## Usage
 

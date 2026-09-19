@@ -12,14 +12,18 @@ SERVICE_UNIT="my-webbridge"
 PORT="10087"
 AGENTS="claude"
 INSTALL_SERVICE=1
+EXTENSION_DIR=""
 
 usage() {
   cat <<EOF
-Usage: $0 [--agents claude|opencode|both] [--no-service] [--port N]
+Usage: $0 [--agents claude|opencode|both] [--no-service] [--port N] [--extension-dir PATH]
 
-  --agents MODE   where to install the skill (default: claude)
-  --no-service    do not install/start the autostart service
-  --port N        daemon port (default: 10087)
+  --agents MODE          where to install the skill (default: claude)
+  --no-service           do not install/start the autostart service
+  --port N               daemon port (default: 10087)
+  --extension-dir PATH   where to copy extension/ for Chrome's Load unpacked
+                         (default: ~/Desktop/My Web Bridge Extension on macOS,
+                          ~/my-webbridge-extension elsewhere)
 EOF
 }
 
@@ -28,6 +32,7 @@ while [[ $# -gt 0 ]]; do
     --agents) AGENTS="${2:?missing value for --agents}"; shift 2 ;;
     --no-service) INSTALL_SERVICE=0; shift ;;
     --port) PORT="${2:?missing value for --port}"; shift 2 ;;
+    --extension-dir) EXTENSION_DIR="${2:?missing value for --extension-dir}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -40,9 +45,18 @@ esac
 
 OS="$(uname -s)"
 
+if [[ -z "$EXTENSION_DIR" ]]; then
+  if [[ "$OS" == "Darwin" ]]; then
+    EXTENSION_DIR="$HOME/Desktop/My Web Bridge Extension"
+  else
+    EXTENSION_DIR="$HOME/my-webbridge-extension"
+  fi
+fi
+
 echo "==> repo:   $REPO_ROOT"
 echo "==> python: $PYTHON_BIN"
 echo "==> agents: $AGENTS"
+echo "==> ext:    $EXTENSION_DIR"
 echo "==> port:   $PORT"
 
 mkdir -p "$LOG_DIR"
@@ -70,6 +84,12 @@ fi
 if [[ "$AGENTS" == "opencode" || "$AGENTS" == "both" ]]; then
   install_skill "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills/my-webbridge"
 fi
+
+echo "==> installing extension -> $EXTENSION_DIR"
+rm -rf "$EXTENSION_DIR"
+mkdir -p "$EXTENSION_DIR"
+cp -R "$REPO_ROOT/extension/." "$EXTENSION_DIR/"
+printf 'EXTENSION_DIR=%q\n' "$EXTENSION_DIR" > "$LOG_DIR/install.env"
 
 render() {
   sed -e "s|{{PYTHON}}|$PYTHON_BIN|g" \
@@ -109,8 +129,9 @@ for _ in $(seq 1 30); do
     curl -s "http://127.0.0.1:$PORT/status"; echo
     echo
     echo "NEXT: load the unpacked extension from:"
-    echo "      $REPO_ROOT/extension"
+    echo "      $EXTENSION_DIR"
     echo "      chrome://extensions -> Developer mode -> Load unpacked"
+    echo "      (helper: $REPO_ROOT/scripts/reveal-extension.sh)"
     echo "Then run: $REPO_ROOT/scripts/behavior_test.py --port $PORT"
     exit 0
   fi

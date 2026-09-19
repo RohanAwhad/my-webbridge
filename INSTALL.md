@@ -10,6 +10,28 @@ behavior tests pass. The user can then ask their agent to drive the browser.
 
 ---
 
+## How to narrate progress (required)
+
+The user may be non-technical and easily frustrated. Announce each step as a running checklist,
+one action at a time, and never dump the whole runbook at once:
+
+```
+[1/6] Installing dependencies...        ✓
+[2/6] Installing skill + extension...   ✓
+[3/6] Starting background service...    ✓
+[4/6] Your turn — loading the extension in Chrome:
+      <one instruction, then wait>
+[5/6] Verifying browser connection...   ✓
+[6/6] Running behavior tests...         ✓ (9/9)
+You're armed. Try: "use the my-webbridge skill to open example.com"
+```
+
+Rules: confirm each mechanical step with `✓`; at the human step, wait for the user after **every
+instruction**; if the user is confused, re-explain differently (offer the fallback), don't repeat
+verbatim; never claim success until the tests pass.
+
+---
+
 ## Prerequisites
 
 Verify these exist before starting:
@@ -51,6 +73,7 @@ Flags (defaults chosen by the user at kickoff):
 | `--agents claude\|opencode\|both` | `claude` | Where to copy `skill/` |
 | `--no-service` | off | Skip the autostart service; run the daemon manually |
 | `--port N` | `10087` | Daemon port |
+| `--extension-dir PATH` | visible dir (below) | Where to copy `extension/` for Chrome |
 
 What it does:
 
@@ -58,10 +81,15 @@ What it does:
 2. Copies `skill/` into the requested agent skills dir(s):
    - `~/.claude/skills/my-webbridge/`
    - `${XDG_CONFIG_HOME:-~/.config}/opencode/skills/my-webbridge/`
-3. Renders `daemon/service/launchd.plist.template` (macOS) or
+3. Copies `extension/` to a **visible, one-click** directory so the human can find it in Chrome's
+   file picker (never `~/Library`, which is hidden):
+   - macOS: `~/Desktop/My Web Bridge Extension`
+   - Linux: `~/my-webbridge-extension`
+   - Override with `--extension-dir PATH`. The path is remembered in `logs/install.env`.
+4. Renders `daemon/service/launchd.plist.template` (macOS) or
    `daemon/service/systemd.service.template` (Linux) with the resolved repo path + venv python,
    installs it as a user service, and starts it.
-4. Waits for `GET /status` and prints the result.
+5. Waits for `GET /status` and prints the result.
 
 If the user asked for `--no-service`, start the daemon yourself instead:
 
@@ -92,32 +120,38 @@ If `running` is not true, see Troubleshooting before continuing.
 
 ## Step 3 — Load the extension (human-in-the-loop)
 
-The unpacked extension **cannot** be installed programmatically; a human must click. Tell the
-user, concisely:
+The unpacked extension **cannot** be installed programmatically; a human must click through
+Chrome. Assume the user is **non-technical and easily frustrated** — do the navigating for them
+and give **one instruction at a time**.
 
-1. Open `chrome://extensions` in Chrome.
-2. Toggle **Developer mode** (top-right) ON.
-3. Click **Load unpacked**.
-4. Select this repo's `extension/` directory — print the absolute path for them:
-
-```bash
-echo "$(pwd)/extension"
-```
-
-You may open the page for them:
+Run the helper first; it reveals the folder in Finder/File Manager, copies the path to the
+clipboard, and opens `chrome://extensions`:
 
 ```bash
-# macOS
-open -a "Google Chrome" "chrome://extensions"
-# Linux
-google-chrome "chrome://extensions" || chromium "chrome://extensions"
+./scripts/reveal-extension.sh
+# prints: extension dir: /Users/<you>/Desktop/My Web Bridge Extension
 ```
 
-Then **stop and wait for the user to confirm** the extension is loaded. Do not poll forever; if
-they say it's loaded, proceed to Step 4.
+The extension was installed to a **visible** directory at Step 1 (macOS:
+`~/Desktop/My Web Bridge Extension`; Linux: `~/my-webbridge-extension`). Never ask the user to
+navigate `~/Library` — it is hidden and will not appear in the picker.
 
-Note: if the extension shows as loaded but never connects, the user may need to enable
-**Allow access to file URLs** / ensure the daemon is running, and reload the extension.
+Then give the user, **one line at a time, waiting after each**:
+
+1. "In Chrome, top-right: turn on **Developer mode**." *(wait for "ok")*
+2. "Click **Load unpacked**." *(wait)*
+3. "In the left sidebar click **Desktop**, then double-click **My Web Bridge Extension**,
+   then click **Open**." *(macOS; adjust for Linux)* *(wait)*
+4. "You should see **My Web Bridge** in the list — tell me when it's there."
+
+Fallback if they can't find the folder: *"In the file dialog press **Cmd+Shift+G**, then
+**Cmd+V**, then **Enter** — I already copied the path for you."* (Linux: `Ctrl+L`, paste, Enter.)
+
+If they seem stuck or confused, **re-explain differently** rather than repeating verbatim, and
+offer the fallback. Then **stop and wait for confirmation** before continuing.
+
+Note: if the extension shows as loaded but never connects, ask them to click **Reload** on the
+extension card, and confirm the daemon is running.
 
 ---
 
@@ -195,6 +229,7 @@ Then tell the user they are armed. Example prompt to give them:
 | Port already in use | Reinstall with `--port 10088` (and pass the same `--port` to `daemon-ctl.sh` and `behavior_test.py`) |
 | macOS: service won't start | `launchctl unload ~/Library/LaunchAgents/com.rawhad.my-webbridge.plist` then re-run `install.sh` |
 | Linux: service won't start | `systemctl --user status my-webbridge` and `journalctl --user -u my-webbridge` |
+| User can't find the extension folder | Run `./scripts/reveal-extension.sh`; fallback Cmd+Shift+G → paste → Enter (Ctrl+L on Linux) |
 | `behavior_test.py` timeout on navigate | Chrome window may be blocked; bring it to front and retry |
 | Chrome shows "Developer mode extensions" warning | Normal for unpacked extensions; it can be dismissed |
 
@@ -203,7 +238,7 @@ Then tell the user they are armed. Example prompt to give them:
 ## Uninstall
 
 ```bash
-./scripts/uninstall.sh            # stops+removes service, removes skill copies, keeps venv
+./scripts/uninstall.sh            # stops+removes service, removes skill + extension copies
 ./scripts/uninstall.sh --purge    # also removes daemon/.venv
 ```
 

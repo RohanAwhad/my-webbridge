@@ -10,10 +10,13 @@ runbook encodes the exact order, the human-in-the-loop Chrome step, and the pass
 
 Summary of the contract:
 
-1. Run `./scripts/install.sh` (creates the venv, copies the skill, installs the autostart service).
+1. Run `./scripts/install.sh` (creates the venv, copies the skill, copies `extension/` to a
+   visible dir, installs the autostart service).
 2. Confirm `GET http://127.0.0.1:10087/status` returns `running: true`.
-3. Walk the **human** through `chrome://extensions` → Developer mode → **Load unpacked** → this
-   repo's `extension/` dir. This step cannot be automated; wait for the human to confirm.
+3. Run `./scripts/reveal-extension.sh`, then walk the **human** through `chrome://extensions` →
+   Developer mode → **Load unpacked** → the copied extension dir (default
+   `~/Desktop/My Web Bridge Extension` on macOS, `~/my-webbridge-extension` on Linux). This step
+   cannot be automated; give one instruction at a time and wait for the human to confirm.
 4. Poll `/status` until `extension_connected: true`.
 5. Run `./scripts/behavior_test.py` and report the pass/fail table. Only claim success if all
    checks pass.

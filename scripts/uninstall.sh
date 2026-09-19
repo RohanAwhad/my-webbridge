@@ -40,6 +40,22 @@ for dest in "$HOME/.claude/skills/my-webbridge" \
   fi
 done
 
+if [[ -f "$REPO_ROOT/logs/install.env" ]]; then
+  # shellcheck disable=SC1090
+  source "$REPO_ROOT/logs/install.env"
+fi
+if [[ -z "${EXTENSION_DIR:-}" ]]; then
+  if [[ "$OS" == "Darwin" ]]; then
+    EXTENSION_DIR="$HOME/Desktop/My Web Bridge Extension"
+  else
+    EXTENSION_DIR="$HOME/my-webbridge-extension"
+  fi
+fi
+if [[ -d "$EXTENSION_DIR" ]]; then
+  echo "==> removing extension copy $EXTENSION_DIR"
+  rm -rf "$EXTENSION_DIR"
+fi
+
 if [[ "$PURGE" == "1" ]]; then
   echo "==> purging venv + logs"
   rm -rf "$REPO_ROOT/daemon/.venv" "$REPO_ROOT/logs"
