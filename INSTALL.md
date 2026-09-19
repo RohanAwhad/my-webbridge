@@ -32,7 +32,7 @@ If `python3` is missing, stop and ask the user to install it.
 If you are already inside the repo, skip. Otherwise:
 
 ```bash
-git clone https://github.com/rawhad/my-webbridge.git
+git clone https://github.com/RohanAwhad/my-webbridge.git
 cd my-webbridge
 ```
 

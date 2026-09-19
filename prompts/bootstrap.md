@@ -6,7 +6,7 @@ Paste this into a fresh Claude Code / opencode session (from any directory):
 
 Install the **My WebBridge** package on this machine.
 
-1. Clone `https://github.com/rawhad/my-webbridge.git` into `~/1_Projects/my-webbridge`
+1. Clone `https://github.com/RohanAwhad/my-webbridge.git` into `~/1_Projects/my-webbridge`
    (or a temp dir if that exists as a non-repo) and `cd` into it.
 2. Read `INSTALL.md` and follow it top to bottom.
 3. Use `./scripts/install.sh --agents claude` (switch to `--agents both` if I use opencode too).
